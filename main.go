@@ -23,12 +23,12 @@ func main() {
 	v1 := router.Group("api/v1")
 	{
 		v1.GET("/", Index)
+		v1.POST("/importCSV", ReadCSV)
 		v1.POST("/barangs", PostBarang)
 		v1.GET("/barangs", GetBarangs)
 		v1.GET("/barangs/:sku", GetBarang)
 		v1.PUT("/barangs/:sku", UpdateBarang)
 		v1.DELETE("/barangs/:sku", DeleteBarang)
-		v1.POST("/laporan/read", ReadCSV)
 		v1.GET("/laporan/nilaibarang", GetLaporanBarangs)
 		v1.GET("/laporan/nilaibarang/:csv", GetLaporanBarangs, ExportCSV)
 		v1.GET("/laporan/penjualan/:tmfirst/:tmlast", GetLaporanPenjualans)
