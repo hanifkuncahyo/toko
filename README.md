@@ -1,5 +1,9 @@
 # toko
-building toko app using go
+building toko app API using go
+
+to run:
+- git clone project on your $GOPATH
+- execute :  go run ./toko/*.go
 
 DOKUMENTASI API:
 
