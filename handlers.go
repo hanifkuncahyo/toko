@@ -4,7 +4,7 @@ import (
     "time"
     "net/http"
     "fmt"
-    "os"
+    // "os"
     "encoding/csv"
     "strings"
     "bytes"
@@ -15,42 +15,89 @@ import (
 )
 
 func ReadCSV(c *gin.Context) {
-
-    file, err := os.Open("Laporanpenjualan.csv")
+    file, _, err := c.Request.FormFile("upload")
     if err != nil {
         fmt.Println("Error", err)
-        return
+        c.JSON(422, gin.H{"error": "Error occured"})
     }
+
     defer file.Close()
+    tipe := c.PostForm("tipe")
 
     reader := csv.NewReader(file)
     record, err := reader.ReadAll()
     if err != nil {
         fmt.Println("Error", err)
     }
+
     db := InitDb()
     defer db.Close()
 
-    for value:= range record{ // for i:=0; i<len(record)
-        fmt.Println("", record[value])
+    for value:= range record{ 
+        if tipe == "penjualan"{
+            jkeluar,_ := strconv.Atoi(record[value][3])
+            hjual,_ := strconv.Atoi(record[value][4])
+            waktu := time.Now().In(loc)
+            waktuupdt := time.Now().In(loc)
+            penjualan := PenjualanDB{
+                Waktu: waktu,
+                Waktuupdt: waktuupdt,
+                Sku: record[value][2],
+                Jkeluar: jkeluar,
+                Hjual: hjual,
+                Catatan: record[value][5],
+            }
+            
+            if penjualan.Sku != "" && penjualan.Jkeluar != 0 && penjualan.Hjual != 0{
+                
+                err := db.Create(&penjualan)
+                if err.RowsAffected == 0 {
+                    c.JSON(422, gin.H{"error": "Error occured"})
+                }
+            }
+        } else if tipe == "pembelian"{
+            
+            waktu := time.Now().In(loc)
+            waktuupdt := time.Now().In(loc)
+            jpemesanan,_ := strconv.Atoi(record[value][2])
+            jditerima,_ := strconv.Atoi(record[value][3])
+            hbeli,_ := strconv.Atoi(record[value][4])
 
-        penjualan := PenjualanDB{
-            Waktu: record[value][0],
-            Waktuupdt: record[value][1],
-            Sku: record[value][2],
-            Jkeluar: record[value][3],
-            Hjual: record[value][4],
-        }
+            pembelian := PembelianDB{
+                Waktu: waktu,
+                Waktuupdt: waktuupdt,
+                Sku: record[value][1],
+                Jpemesanan : jpemesanan,
+                Jditerima : jditerima,
+                Hbeli : hbeli,
+                Kwitansi: record[value][5],
+                Catatan: record[value][6],
+            }
+            
+            if pembelian.Sku != "" && pembelian.Jpemesanan != 0 && pembelian.Jditerima != 0 && pembelian.Hbeli != 0 && pembelian.Kwitansi != "" && pembelian.Catatan != "" {
+                // pembelian.Waktu = time.Now().In(loc)
+                // pembelian.Waktuupdt = time.Now().In(loc)
 
-        if penjualan.Sku != "" && penjualan.Jkeluar != 0 && penjualan.Hjual != 0{
-            penjualan.Waktu = time.Now().In(loc)
-            penjualan.Waktuupdt = time.Now().In(loc)
-            err := db.Create(&penjualan)
-
-            if err.RowsAffected == 0 {
-                c.JSON(422, gin.H{"error": "Error occured"})
+                err := db.Create(&pembelian)
+                if err.RowsAffected == 0 {
+                    c.JSON(422, gin.H{"error": "Error occured"})
+                } 
+            }
+        } else if tipe == "barang"{
+            barang := BarangDB{
+                Sku: record[value][0],
+                Nama: record[value][1],
+            }
+            
+            if barang.Sku != "" && barang.Nama != "" {
+                
+                err := db.Create(&barang)
+                if err.RowsAffected == 0 {
+                    c.JSON(422, gin.H{"error": "Error occured"})
+                } 
             }
         }
+
     }
 
     c.JSON(200, gin.H{"success": "Kebaca"})
@@ -83,7 +130,7 @@ func PostBarang(c *gin.Context) {
     var barang BarangDB
     c.Bind(&barang)
 
-    if barang.Nama != "" {
+    if barang.Nama != "" && barang.Sku != "" {
         db.Create(&barang)
         c.JSON(201, gin.H{"success": barang})
     } else {
